@@ -23,9 +23,14 @@ public class Routes extends RouteBuilder{
         .setHeader(Exchange.HTTP_METHOD, constant("POST"))
             .setHeader(Exchange.CONTENT_TYPE, constant("application/x-www-form-urlencoded"))
             // ensure that you use correct client if and client secret
-            .setBody(simple("grant_type=client_credentials&client_id=1233232&client_secret=xxxxxx"))
+            .setBody(simple("grant_type=client_credentials&client_id={{client.id}}&client_secret={{client.secret}}"))
             // Change the below url to your keycloak token endpoint
-            .to("http://google.com");
+            .toD("{{sso.token.endpoint}}")
+            //.unmarshal().base64().log("${body}");
+            .convertBodyTo(String.class)
+            //.marshal().json()
+            .setHeader(Exchange.CONTENT_TYPE, constant("application/json"))
+            .to("log:DEBUG?showBody=true&showHeaders=true");
         //.setBody(constant("Hello from Quarkus"));
     }
     
