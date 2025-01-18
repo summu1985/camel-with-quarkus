@@ -3,13 +3,26 @@ package com.redhat.demo.camelquarkus;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.rest.RestBindingMode;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
 public class Routes extends RouteBuilder{
+
+    // @ConfigProperty(name = "truststore.file")
+    // String trustStoreFile;
+
+    // @ConfigProperty(name = "truststore.password")
+    // String trustStorePassword;
+
+    private ConfigureSsl configureSsl = new ConfigureSsl();
 
     @Override
     public void configure() throws Exception {
         // TODO Auto-generated method stub
-        restConfiguration().bindingMode(RestBindingMode.json);
+
+        restConfiguration().scheme("https").bindingMode(RestBindingMode.json);
         rest("/token")
                 .post().type(input.class)
                 .to("direct:getToken");
@@ -32,8 +45,9 @@ public class Routes extends RouteBuilder{
         .setBody(simple("grant_type=client_credentials&client_id=${header.client_id}&client_secret=${header.client_secret}"))
             // Change the below url to your keycloak token endpoint
             // show the body
-        //.log("${body}")
-        .toD("{{sso.token.endpoint}}")
+        .to(configureSsl.setupSSLContext(getCamelContext()))
+        //.to(registerSslContextParameter(),"https://localhost:8081/realms/user1-realm/protocol/openid-connect/token")
+        //.toD("{{sso.token.endpoint}}?sslContextParameters=#mySSLContextParameters")
             //.unmarshal().base64().log("${body}");
         .convertBodyTo(String.class)
             //.marshal().json()
