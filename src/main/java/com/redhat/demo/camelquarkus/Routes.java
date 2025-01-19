@@ -1,7 +1,10 @@
 package com.redhat.demo.camelquarkus;
 
+import java.nio.charset.StandardCharsets;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.camel.model.rest.RestBindingMode;
 
 public class Routes extends RouteBuilder{
@@ -35,11 +38,18 @@ public class Routes extends RouteBuilder{
         //.log("${body}")
         .toD("{{sso.token.endpoint}}")
             //.unmarshal().base64().log("${body}");
-        .convertBodyTo(String.class)
-            //.marshal().json()
+        .process(exchange->{
+            byte[] ssoResponseBytes = (byte[]) exchange.getIn().getBody();
+                String ssoResponseBytesToStrings = new String(ssoResponseBytes, StandardCharsets.UTF_8);
+                System.out.println("sso response : " + ssoResponseBytesToStrings);
+                exchange.getIn().setBody(ssoResponseBytesToStrings, String.class);
+
+
+        })
+        .unmarshal()
+        .json(JsonLibrary.Jackson, SsoResponse.class)
+        .to("log:DEBUG?showBody=true&showHeaders=true")
         .setHeader(Exchange.CONTENT_TYPE, constant("application/json"));
-        //.to("log:DEBUG?showBody=true&showHeaders=true");
-        //.setBody(constant("Hello from Quarkus"));
     }
     
 }
